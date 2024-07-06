@@ -1,0 +1,70 @@
+import React, { useState } from 'react';
+import axios from 'axios';
+
+const TakeQuiz = ({ quizId }) => {
+  const [quiz, setQuiz] = useState(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [answers, setAnswers] = useState([]);
+  const [score, setScore] = useState(null);
+
+  useEffect(() => {
+    axios.get(`/api/quizzes/${quizId}`)
+      .then(response => {
+        setQuiz(response.data);
+      })
+      .catch(error => {
+        console.error('There was an error fetching the quiz!', error);
+      });
+  }, [quizId]);
+
+  const handleAnswerSubmit = (answer) => {
+    setAnswers([...answers, answer]);
+    if (currentQuestionIndex < quiz.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else {
+      calculateScore();
+    }
+  };
+
+  const calculateScore = () => {
+    let correctAnswers = 0;
+    answers.forEach((answer, index) => {
+      if (answer === quiz.questions[index].correctAnswer) {
+        correctAnswers += 1;
+      }
+    });
+    setScore(correctAnswers);
+  };
+
+  if (!quiz) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div>
+      <h1>{quiz.title}</h1>
+      {score === null ? (
+        <div>
+          <p>{quiz.questions[currentQuestionIndex].questionText}</p>
+          <ul>
+            {quiz.questions[currentQuestionIndex].options.map((option, index) => (
+              <li key={index} onClick={() => handleAnswerSubmit(option)}>{option}</li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div>
+          <p>Your score: {score}/{quiz.questions.length}</p>
+          <p>Correct Answers:</p>
+          <ul>
+            {quiz.questions.map((question, index) => (
+              <li key={index}>{question.questionText}: {question.correctAnswer}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default TakeQuiz;
